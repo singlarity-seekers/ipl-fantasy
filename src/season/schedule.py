@@ -1,8 +1,41 @@
 """
-IPL 2026 Schedule loader and query interface.
+IPL 2026 Schedule loader and fixture density queries.
 
-Provides schedule parsing, match lookup, and fixture density queries
-for transfer optimization.
+PURPOSE:
+--------
+The transfer optimizer values players higher if their teams have
+busy upcoming schedules (more matches = more scoring opportunities).
+
+FIXTURE DENSITY:
+---------------
+The key insight: A player from a team playing 4 of next 5 matches
+is more valuable than a player from a team playing 1 of next 5,
+even if both have similar per-match averages.
+
+Example: Match 1-5 schedule
+  Match 1: RCB vs SRH
+  Match 2: MI vs KKR
+  Match 3: RR vs CSK
+  Match 4: PBKS vs GT
+  Match 5: LSG vs DC
+
+Fixture counts in next 5:
+  MI: 2 matches (M2, M13) → fixture_density = 2
+  RCB: 2 matches (M1, M11) → fixture_density = 2
+  SRH: 2 matches (M1, M6) → fixture_density = 2
+  ...etc
+
+The transfer optimizer adds α × fixture_density × avg_points
+to each player's objective value, encouraging selection of players
+from teams with busy upcoming schedules.
+
+DATA SOURCE:
+-----------
+Schedule parsed from official IPL 2026 PDF:
+data/raw/1773233174530_TATA IPL Schedule 2026_Part 1.pdf
+
+Currently contains first 20 matches only—full schedule to be added
+when IPL releases it.
 """
 
 from __future__ import annotations

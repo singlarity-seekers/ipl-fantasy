@@ -1,17 +1,28 @@
 """
 Agentic orchestrator — the central pipeline that ties all modules together.
 
-Pipeline:
-  1. Ingest match context (teams, venue, date)
-  2. LLM sidecar → pull news, generate adjustments
-  3. Feature pipeline → build player features
-  4. Forecast → probabilistic predictions (adjusted by LLM)
-  5. Monte Carlo → simulate N matches → point distributions
-  6. Optimizer → generate top-K lineups
-  7. Captain selector → assign C/VC per lineup
-  8. Reranker → score & rank lineups via reward model
-  9. Bandit → select final lineup
-  10. Output → CLI / Dashboard
+COMPLETE PIPELINE (for single match):
+-------------------------------------
+1. Ingest match context (teams, venue, date)
+2. (Optional) LLM sidecar → pull news, generate adjustments
+3. Feature pipeline → build player features from historical data
+4. Forecast → probabilistic predictions (mean ± std for each player)
+5. Monte Carlo → 10,000 simulations using those distributions
+6. Optimizer → ILP generates top-K valid lineups within constraints
+7. Captain selector → assigns C/VC per lineup based on distributions
+8. Reranker → scores & ranks lineups via reward model (floor, ceiling, diversity)
+9. Bandit → Thompson Sampling selects final lineup
+10. Output → CLI / Dashboard
+
+TRANSFER PLANNING (season-long mode):
+------------------------------------
+The orchestrator also supports transfer-aware optimization:
+- plan_transfers() uses TransferOptimizer instead of IPLFantasyOptimizer
+- Considers fixture density over next N matches
+- Penalizes each transfer in objective function
+- Respects 160-transfer season budget
+
+This is called by the CLI 'plan' command to recommend transfers.
 """
 
 from __future__ import annotations

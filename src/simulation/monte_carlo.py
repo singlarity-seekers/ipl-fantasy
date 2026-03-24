@@ -1,9 +1,35 @@
 """
 Monte Carlo match simulation engine.
 
-Runs N simulations of a match by sampling from player forecast
-distributions, applying IPL Fantasy scoring, and aggregating results
-into fantasy point distributions per player.
+PURPOSE:
+--------
+Transform probabilistic forecasts into actionable distributions.
+Instead of just saying "Kohli scores 45 points on average",
+we generate 10,000 possible outcomes showing the full range:
+- Floor (5th percentile): 20 points (worst case)
+- Ceiling (95th percentile): 75 points (best case)
+- Probability of 50+ points: 35%
+
+HOW IT WORKS:
+-------------
+1. For each of N=10,000 simulations:
+   - Sample fantasy points for each player from their forecast distribution
+   - This uses the std (uncertainty) calculated in PlayerForecaster
+   - High std = wider spread of samples = more volatile outcomes
+
+2. Aggregate across all simulations:
+   - Build (players × simulations) matrix
+   - Calculate percentiles, probabilities, consistency metrics
+
+WHY THIS MATTERS:
+----------------
+Fantasy scoring is inherently uncertain. A player with mean=40, std=25
+is very different from mean=40, std=8, even though both "expect" 40 pts.
+- High std = boom-or-bust (good for differential captains)
+- Low std = consistent floor (good for safe lineups)
+
+The optimizer uses these distributions to pick lineups that maximize
+expected points while managing risk (floor) and upside (ceiling).
 """
 
 from __future__ import annotations
@@ -42,25 +68,27 @@ class SimulationResult:
         records = []
         for i, (name, role) in enumerate(zip(self.player_names, self.player_roles)):
             pts = self.points_matrix[i]
-            records.append({
-                "player": name,
-                "role": role,
-                "mean_fp": float(np.mean(pts)),
-                "median_fp": float(np.median(pts)),
-                "std_fp": float(np.std(pts)),
-                "floor_5": float(np.percentile(pts, 5)),
-                "q10": float(np.percentile(pts, 10)),
-                "q25": float(np.percentile(pts, 25)),
-                "q75": float(np.percentile(pts, 75)),
-                "q90": float(np.percentile(pts, 90)),
-                "ceiling_95": float(np.percentile(pts, 95)),
-                "max_fp": float(np.max(pts)),
-                "prob_30plus": float(np.mean(pts >= 30)),
-                "prob_50plus": float(np.mean(pts >= 50)),
-                "prob_75plus": float(np.mean(pts >= 75)),
-                "consistency": float(1.0 / (1.0 + np.std(pts))),  # higher = more consistent
-                "upside_ratio": float(np.percentile(pts, 95) / max(np.mean(pts), 1)),
-            })
+            records.append(
+                {
+                    "player": name,
+                    "role": role,
+                    "mean_fp": float(np.mean(pts)),
+                    "median_fp": float(np.median(pts)),
+                    "std_fp": float(np.std(pts)),
+                    "floor_5": float(np.percentile(pts, 5)),
+                    "q10": float(np.percentile(pts, 10)),
+                    "q25": float(np.percentile(pts, 25)),
+                    "q75": float(np.percentile(pts, 75)),
+                    "q90": float(np.percentile(pts, 90)),
+                    "ceiling_95": float(np.percentile(pts, 95)),
+                    "max_fp": float(np.max(pts)),
+                    "prob_30plus": float(np.mean(pts >= 30)),
+                    "prob_50plus": float(np.mean(pts >= 50)),
+                    "prob_75plus": float(np.mean(pts >= 75)),
+                    "consistency": float(1.0 / (1.0 + np.std(pts))),  # higher = more consistent
+                    "upside_ratio": float(np.percentile(pts, 95) / max(np.mean(pts), 1)),
+                }
+            )
         return pd.DataFrame(records)
 
     def get_player_distribution(self, player: str) -> np.ndarray:
@@ -113,7 +141,8 @@ class MonteCarloSimulator:
 
         logger.info(
             "Running %d simulations for %d players",
-            n_sims, n_players,
+            n_sims,
+            n_players,
         )
 
         # Pre-allocate points matrix

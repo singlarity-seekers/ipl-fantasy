@@ -1,7 +1,49 @@
 """
-Transfer-aware optimizer with ILP formulation.
+Transfer-aware optimizer with ILP formulation and look-ahead fixture density.
 
-Extends the base optimizer to penalize transfers and consider future fixture value.
+THE PROBLEM:
+------------
+Standard optimizers pick the best team for ONE match in isolation.
+But IPL Fantasy is season-long with a 160-transfer budget.
+Blindly chasing the optimal single-match XI would exhaust transfers by match 30.
+
+THE SOLUTION:
+-------------
+Extend the ILP to penalize transfers AND value future matches:
+
+OBJECTIVE FUNCTION:
+  maximize Σ x_i × (E[pts_i] + α × future_value_i) - λ × Σ t_i
+
+Where:
+  - x_i: binary (1 if player i in new squad)
+  - t_i: binary (1 if player i is a NEW transfer)
+  - λ (lambda): transfer penalty (~5 points per transfer)
+  - α (alpha): look-ahead weight (~0.3)
+
+FUTURE VALUE CALCULATION:
+------------------------
+future_value_i = fixture_density × avg_points × decay
+
+Fixture density = how many matches this player's team plays in next N games
+
+Example: MI plays 3 of next 5 matches, RCB plays 1
+  → MI players get 3× multiplier, RCB players get 1×
+  → This encourages picking players from teams with busy schedules
+
+TRANSFER DETECTION:
+------------------
+The ILP has a clever constraint: t_i ≥ x_i - s_i
+  - s_i = 1 if player already in squad
+  - If s_i=0 (not in squad) and x_i=1 (selected), then t_i must be 1
+  - Counts all new transfers, penalized by λ in objective
+
+This naturally limits churn—only transfer if the points gain > penalty cost.
+
+WILDCARD/ FREE HIT:
+-----------------
+The state manager handles special boosters:
+- Wildcard: unlimited transfers, no penalty
+- Free Hit: unlimited transfers, squad reverts after match
 """
 
 from __future__ import annotations

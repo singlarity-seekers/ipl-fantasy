@@ -1,9 +1,59 @@
 """
 IPL Fantasy CLI — command-line interface for team generation and analysis.
 
-Usage:
+TWO MODES OF OPERATION:
+-----------------------
+1. SINGLE MATCH MODE: Optimize for one match only
+   - Uses only players from the two teams playing
+   - Best for: Daily fantasy contests, single-match leagues
+
+   Commands: generate, forecast, backtest
+
+2. SEASON-LONG MODE: Manage squad across entire IPL season
+   - Uses all 245 players from all 10 teams
+   - Tracks 160-transfer budget
+   - Optimizes for fixture density (busy schedules)
+   - Best for: Season-long fantasy leagues
+
+   Commands: squad, plan, apply, toss
+
+WORKFLOW FOR SEASON-LONG:
+-------------------------
+Pre-season:
+  $ ipl-fantasy squad init --match 1 --look-ahead 5
+  → Auto-generates optimal XI considering next 5 matches
+
+Pre-toss (each match):
+  $ ipl-fantasy plan --match 5 --max-transfers 3 --look-ahead 3
+  → Recommends transfers based on fixture density
+
+Post-toss:
+  $ ipl-fantasy toss --match 5 --team1-xi "..." --team2-xi "..."
+  → Optimizes with confirmed playing XIs (22 players only)
+
+Apply changes:
+  $ ipl-fantasy apply --match 5 --confirm
+  → Commits transfers, updates state
+
+Monitor:
+  $ ipl-fantasy squad status    # Transfers remaining, boosters
+  $ ipl-fantasy squad history   # Transfer log
+
+KEY CONCEPTS:
+------------
+- Fixture Density: Teams with more upcoming matches are prioritized
+- Transfer Penalty: Each transfer costs ~5 points in optimization
+- Look-ahead: Number of future matches to consider (default: 0 = single match)
+- Free Hit: Booster allowing unlimited transfers that revert after match
+
+Examples:
+    # Single match
     ipl-fantasy generate --team1 "MI" --team2 "CSK" --venue "Wankhede"
+
+    # Player forecast
     ipl-fantasy forecast --player "Virat Kohli"
+
+    # Backtest historical season
     ipl-fantasy backtest --season 2024
 """
 

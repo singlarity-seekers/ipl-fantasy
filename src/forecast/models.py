@@ -1,12 +1,33 @@
 """
-Probabilistic player performance forecasting.
+Probabilistic player performance forecasting for IPL Fantasy.
 
-Two-tier approach:
-  1. XGBoost regressor → expected IPL Fantasy fantasy points
-  2. Uncertainty quantification via residual-based bootstrapping
-     or quantile regression
+HOW IT WORKS:
+-------------
+1. Fit on historical scorecards (player performance data from past IPL seasons)
+2. For each player, calculate:
+   - Expected points: blend of career average + recent form (last 5 matches)
+   - Uncertainty (std): standard deviation of historical fantasy scores
+   - Percentiles: 5th, 10th, 50th, 90th, 95th from empirical distribution
 
-Output: for each player, a distribution P(fantasy_points | context).
+3. Output: PlayerForecast object containing the full distribution
+
+UNCERTAINTY QUANTIFICATION:
+--------------------------
+- For known players (3+ matches): std comes from actual historical variance
+  Example: If Kohli scored [45, 32, 68, 12, 55] in last 5 matches,
+  std = np.std([45, 32, 68, 12, 55]) = ±21 points
+
+- For cold-start players (no history): use role-based priors
+  BOWL: 35±25, BAT: 32±24, AR: 28±20, WK: 18±14
+
+MONTE CARLO SAMPLING:
+--------------------
+The sample() method draws from either:
+  - Empirical: bootstrap from historical values (rng.choice(history))
+  - Normal: truncated normal with (mean, std) clipped at 0 (can't score negative)
+
+This uncertainty feeds into the Monte Carlo simulation to generate
+point distributions, not just single expected values.
 """
 
 from __future__ import annotations
@@ -143,10 +164,7 @@ class PlayerForecaster:
             recent = history[-5:] if len(history) >= 5 else history
             recent_mean = float(np.mean(recent))
 
-            expected = (
-                recent_form_weight * recent_mean
-                + (1 - recent_form_weight) * career_mean
-            )
+            expected = recent_form_weight * recent_mean + (1 - recent_form_weight) * career_mean
             std = max(career_std, 5.0)  # floor on uncertainty
 
             quantiles = np.percentile(history, [5, 10, 50, 90, 95])
@@ -265,8 +283,12 @@ class XGBoostForecaster(PlayerForecaster):
 
         # Define feature columns (must be present in scorecards)
         candidate_features = [
-            "rolling_5_avg_fp", "rolling_10_avg_fp", "ewm_avg_fp",
-            "avg_runs", "avg_wickets", "matches_played",
+            "rolling_5_avg_fp",
+            "rolling_10_avg_fp",
+            "ewm_avg_fp",
+            "avg_runs",
+            "avg_wickets",
+            "matches_played",
         ]
         self._feature_columns = [c for c in candidate_features if c in scorecards.columns]
 

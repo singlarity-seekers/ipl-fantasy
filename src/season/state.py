@@ -1,8 +1,44 @@
 """
-Season state persistence for transfer tracking.
+Season state persistence and transfer tracking.
 
-Manages squad state across matches, tracks transfers used, boosters used,
-and maintains a history of all transfers.
+PURPOSE:
+--------
+IPL Fantasy League 2026 is a season-long competition (70 league matches + playoffs).
+You get 160 transfers for the entire season—not per match.
+
+This module tracks:
+- Current squad (11 players)
+- Transfers used / remaining
+- Boosters used (Triple Captain, Free Hit, etc.)
+- Transfer history (audit trail)
+- Free Hit snapshot (for reverting after match)
+
+WHY PERSISTENCE MATTERS:
+-----------------------
+Without state tracking:
+- You'd lose count of transfers used
+- No history of why transfers were made
+- Free Hit boosters wouldn't revert squad
+- Can't enforce the 160-transfer limit
+
+The state is saved to data/season_state.json as JSON so it persists
+across CLI invocations. Think of it as your fantasy team's database.
+
+TRANSFER BUDGET:
+---------------
+- League stage (matches 1-70): 160 transfers
+- Playoffs (match 71+): 10 additional transfers
+- Unlimited after match 70 for playoffs only
+
+FREE HIT MECHANIC:
+-----------------
+When you use Free Hit booster:
+1. Current squad is saved to free_hit_snapshot
+2. You make unlimited transfers for that match only
+3. After the match, squad automatically reverts to snapshot
+4. No transfers counted against your 160 budget
+
+This is handled in apply_transfers() by checking free_hit_match.
 """
 
 from __future__ import annotations
