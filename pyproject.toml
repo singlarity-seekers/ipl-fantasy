@@ -1,0 +1,56 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ipl-fantasy"
+version = "0.1.0"
+description = "Agentic IPL Fantasy Team Optimizer — probabilistic forecasting, Monte Carlo simulation, and IPL Fantasy constrained optimization"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+
+dependencies = [
+    # Data
+    "pandas>=2.1",
+    "numpy>=1.26",
+    "pyarrow>=14.0",
+    # ML / Stats
+    "scikit-learn>=1.4",
+    "xgboost>=2.0",
+    "scipy>=1.12",
+    # Optimization
+    "pulp>=2.7",
+    # LLM
+    "google-generativeai>=0.4",
+    # CLI
+    "typer[all]>=0.9",
+    "rich>=13.0",
+    # Dashboard
+    "streamlit>=1.30",
+    "plotly>=5.18",
+    # Data download
+    "kagglehub>=0.2",
+]
+
+[project.optional-dependencies]
+bayesian = ["pymc>=5.10", "arviz>=0.17"]
+dev = [
+    "pytest>=7.4",
+    "pytest-cov>=4.1",
+    "ruff>=0.2",
+]
+
+[project.scripts]
+ipl-fantasy = "cli.main:app"
+
+[tool.setuptools.packages.find]
+include = ["src*", "cli*", "dashboard*"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"

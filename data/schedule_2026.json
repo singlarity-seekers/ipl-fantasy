@@ -1,0 +1,187 @@
+{
+  "season": "2026",
+  "source": "TATA IPL Schedule 2026_Part 1.pdf",
+  "note": "Partial schedule - first 20 matches only",
+  "matches": [
+    {
+      "match_number": 1,
+      "date": "2026-03-28",
+      "day": "Sat",
+      "time": "7:30 PM",
+      "home": "Royal Challengers Bengaluru",
+      "away": "Sunrisers Hyderabad",
+      "venue": "Bengaluru"
+    },
+    {
+      "match_number": 2,
+      "date": "2026-03-29",
+      "day": "Sun",
+      "time": "7:30 PM",
+      "home": "Mumbai Indians",
+      "away": "Kolkata Knight Riders",
+      "venue": "Mumbai"
+    },
+    {
+      "match_number": 3,
+      "date": "2026-03-30",
+      "day": "Mon",
+      "time": "7:30 PM",
+      "home": "Rajasthan Royals",
+      "away": "Chennai Super Kings",
+      "venue": "Guwahati"
+    },
+    {
+      "match_number": 4,
+      "date": "2026-03-31",
+      "day": "Tue",
+      "time": "7:30 PM",
+      "home": "Punjab Kings",
+      "away": "Gujarat Titans",
+      "venue": "New Chandigarh"
+    },
+    {
+      "match_number": 5,
+      "date": "2026-04-01",
+      "day": "Wed",
+      "time": "7:30 PM",
+      "home": "Lucknow Super Giants",
+      "away": "Delhi Capitals",
+      "venue": "Lucknow"
+    },
+    {
+      "match_number": 6,
+      "date": "2026-04-02",
+      "day": "Thu",
+      "time": "7:30 PM",
+      "home": "Kolkata Knight Riders",
+      "away": "Sunrisers Hyderabad",
+      "venue": "Kolkata"
+    },
+    {
+      "match_number": 7,
+      "date": "2026-04-03",
+      "day": "Fri",
+      "time": "7:30 PM",
+      "home": "Chennai Super Kings",
+      "away": "Punjab Kings",
+      "venue": "Chennai"
+    },
+    {
+      "match_number": 8,
+      "date": "2026-04-04",
+      "day": "Sat",
+      "time": "3:30 PM",
+      "home": "Delhi Capitals",
+      "away": "Mumbai Indians",
+      "venue": "Delhi"
+    },
+    {
+      "match_number": 9,
+      "date": "2026-04-04",
+      "day": "Sat",
+      "time": "7:30 PM",
+      "home": "Gujarat Titans",
+      "away": "Rajasthan Royals",
+      "venue": "Ahmedabad"
+    },
+    {
+      "match_number": 10,
+      "date": "2026-04-05",
+      "day": "Sun",
+      "time": "3:30 PM",
+      "home": "Sunrisers Hyderabad",
+      "away": "Lucknow Super Giants",
+      "venue": "Hyderabad"
+    },
+    {
+      "match_number": 11,
+      "date": "2026-04-05",
+      "day": "Sun",
+      "time": "7:30 PM",
+      "home": "Royal Challengers Bengaluru",
+      "away": "Chennai Super Kings",
+      "venue": "Bengaluru"
+    },
+    {
+      "match_number": 12,
+      "date": "2026-04-06",
+      "day": "Mon",
+      "time": "7:30 PM",
+      "home": "Kolkata Knight Riders",
+      "away": "Punjab Kings",
+      "venue": "Kolkata"
+    },
+    {
+      "match_number": 13,
+      "date": "2026-04-07",
+      "day": "Tue",
+      "time": "7:30 PM",
+      "home": "Rajasthan Royals",
+      "away": "Mumbai Indians",
+      "venue": "Guwahati"
+    },
+    {
+      "match_number": 14,
+      "date": "2026-04-08",
+      "day": "Wed",
+      "time": "7:30 PM",
+      "home": "Delhi Capitals",
+      "away": "Gujarat Titans",
+      "venue": "Delhi"
+    },
+    {
+      "match_number": 15,
+      "date": "2026-04-09",
+      "day": "Thu",
+      "time": "7:30 PM",
+      "home": "Kolkata Knight Riders",
+      "away": "Lucknow Super Giants",
+      "venue": "Kolkata"
+    },
+    {
+      "match_number": 16,
+      "date": "2026-04-10",
+      "day": "Fri",
+      "time": "7:30 PM",
+      "home": "Rajasthan Royals",
+      "away": "Royal Challengers Bengaluru",
+      "venue": "Guwahati"
+    },
+    {
+      "match_number": 17,
+      "date": "2026-04-11",
+      "day": "Sat",
+      "time": "3:30 PM",
+      "home": "Punjab Kings",
+      "away": "Sunrisers Hyderabad",
+      "venue": "New Chandigarh"
+    },
+    {
+      "match_number": 18,
+      "date": "2026-04-11",
+      "day": "Sat",
+      "time": "7:30 PM",
+      "home": "Chennai Super Kings",
+      "away": "Delhi Capitals",
+      "venue": "Chennai"
+    },
+    {
+      "match_number": 19,
+      "date": "2026-04-12",
+      "day": "Sun",
+      "time": "3:30 PM",
+      "home": "Lucknow Super Giants",
+      "away": "Gujarat Titans",
+      "venue": "Lucknow"
+    },
+    {
+      "match_number": 20,
+      "date": "2026-04-12",
+      "day": "Sun",
+      "time": "7:30 PM",
+      "home": "Mumbai Indians",
+      "away": "Royal Challengers Bengaluru",
+      "venue": "Mumbai"
+    }
+  ]
+}
