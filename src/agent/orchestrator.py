@@ -110,14 +110,18 @@ class Orchestrator:
     def fit_from_data(
         self,
         scorecards: pd.DataFrame,
+        deliveries: pd.DataFrame | None = None,
     ) -> Orchestrator:
         """
         Fit the forecaster from historical scorecards.
 
         Args:
             scorecards: DataFrame from features.build_player_scorecards().
+            deliveries: Optional ball-by-ball data for matchup analysis.
         """
-        self.forecaster.fit(scorecards)
+        self.forecaster.fit(scorecards, deliveries=deliveries)
+        # Pass player history to captain selector for per-player 50+ rate scoring
+        self.captain_selector.set_player_history(self.forecaster._player_history)
         logger.info("Orchestrator fitted on %d scorecard records", len(scorecards))
         return self
 
@@ -161,11 +165,15 @@ class Orchestrator:
         # ── Step 2: Forecast ────────────────────────────────────────────
         player_names = [p["name"] for p in match.players]
         roles = {p["name"]: p.get("role", "BAT") for p in match.players}
+        player_teams = {p["name"]: p.get("team", match.team1) for p in match.players}
 
         forecasts = self.forecaster.forecast_match(
             players=player_names,
             roles=roles,
             venue=match.venue,
+            player_teams=player_teams,
+            team1=match.team1,
+            team2=match.team2,
         )
 
         # Apply LLM adjustments

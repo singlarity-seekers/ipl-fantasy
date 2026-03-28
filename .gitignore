@@ -42,10 +42,9 @@ Thumbs.db
 data/season_state.json
 data/pending_transfers.json
 
-# Large data files (optional - uncomment if you want to exclude raw data)
-# data/raw/*.csv
-# data/raw/*.pdf
-# data/tmp_cricsheet/
+# Temp data
+data/tmp_cricsheet/
+data/tmp_t20/
 
 # pytest
 .pytest_cache/

@@ -209,6 +209,12 @@ def generate(
     date: str = typer.Option("", "--date", "-d", help="Match date (YYYY-MM-DD)"),
     top_k: int = typer.Option(3, "--top-k", "-k", help="Number of lineups to generate"),
     n_sims: int = typer.Option(10_000, "--sims", "-n", help="Number of Monte Carlo simulations"),
+    objective: str = typer.Option(
+        "expected",
+        "--objective",
+        "-o",
+        help="Optimization objective: expected/ceiling/floor/balanced",
+    ),
     strategy: str = typer.Option(
         "safe", "--strategy", "-s", help="Captain strategy: safe/differential/contrarian"
     ),
@@ -240,7 +246,8 @@ def generate(
 
     console.print(
         Panel(
-            f"[bold cyan]{team1_full}[/] vs [bold cyan]{team2_full}[/] at [yellow]{venue or 'TBD'}[/]",
+            f"[bold cyan]{team1_full}[/] vs [bold cyan]{team2_full}[/] at [yellow]{venue or 'TBD'}[/]\n"
+            f"[dim]Objective: {objective} | Captain: {strategy}[/]",
             title="IPL Fantasy Team Generator (2026)",
             border_style="green",
         )
@@ -296,10 +303,12 @@ def generate(
     with console.status("[bold green]Building player scorecards..."):
         scorecards = build_player_scorecards(deliveries, matches)
 
-    # Initialize orchestrator
     with console.status("[bold green]Fitting forecaster..."):
-        orchestrator = Orchestrator(use_llm=use_llm)
-        orchestrator.fit_from_data(scorecards)
+        from src.optimizer.fantasy_ilp import IPLFantasyOptimizer
+
+        optimizer = IPLFantasyOptimizer(objective=objective)
+        orchestrator = Orchestrator(use_llm=use_llm, optimizer=optimizer)
+        orchestrator.fit_from_data(scorecards, deliveries=deliveries)
 
     # Map strategy
     strategy_map = {
@@ -493,6 +502,7 @@ def squad_init(
         "-l",
         help="Number of future matches to consider for initial squad optimization (0=single match only)",
     ),
+    exclude: list[str] = typer.Option([], "--exclude", "-x", help="Players to exclude (e.g. injured). Repeatable."),
     verbose: bool = typer.Option(False, "--verbose", help="Enable debug logging"),
 ) -> None:
     """
@@ -613,8 +623,17 @@ def squad_init(
                 cricket_data,
             )
 
+        # Exclude injured / unavailable players
+        if exclude:
+            exclude_lower = [e.lower() for e in exclude]
+            before = len(player_pool)
+            player_pool = [p for p in player_pool if p["name"].lower() not in exclude_lower]
+            removed = before - len(player_pool)
+            if removed:
+                console.print(f"[dim]Excluded {removed} player(s): {', '.join(exclude)}[/]")
+
         orchestrator = Orchestrator(use_llm=False)
-        orchestrator.fit_from_data(scorecards)
+        orchestrator.fit_from_data(scorecards, deliveries=deliveries)
 
         match_input = MatchInput(
             team1=team1_full,
@@ -640,6 +659,9 @@ def squad_init(
             single_match_pool = _build_player_pool_from_squads(
                 team1_full, team2_full, squads, cricket_data
             )
+            if exclude:
+                exclude_lower = [e.lower() for e in exclude]
+                single_match_pool = [p for p in single_match_pool if p["name"].lower() not in exclude_lower]
             single_match_input = MatchInput(
                 team1=team1_full,
                 team2=team2_full,
@@ -954,6 +976,7 @@ def plan(
     strategy: str = typer.Option(
         "safe", "--strategy", "-s", help="Captain strategy: safe/differential/contrarian"
     ),
+    exclude: list[str] = typer.Option([], "--exclude", "-x", help="Players to exclude (e.g. injured). Repeatable."),
     use_llm: bool = typer.Option(False, "--llm", help="Use LLM sidecar for context"),
     verbose: bool = typer.Option(False, "--verbose", help="Enable debug logging"),
 ) -> None:
@@ -1028,6 +1051,15 @@ def plan(
                     entry["recent_wickets"] = float(recent.get("Wickets_Taken", 0))
             player_pool.append(entry)
 
+    # Exclude injured / unavailable players
+    if exclude:
+        exclude_lower = [e.lower() for e in exclude]
+        before = len(player_pool)
+        player_pool = [p for p in player_pool if p["name"].lower() not in exclude_lower]
+        removed = before - len(player_pool)
+        if removed:
+            console.print(f"[dim]Excluded {removed} player(s): {', '.join(exclude)}[/]")
+
     # Load historical data and run pipeline
     with console.status("[bold green]Loading data..."):
         matches_df, deliveries = load_dataset()
@@ -1035,7 +1067,7 @@ def plan(
 
     with console.status("[bold green]Planning transfers..."):
         orchestrator = Orchestrator(use_llm=use_llm)
-        orchestrator.fit_from_data(scorecards)
+        orchestrator.fit_from_data(scorecards, deliveries=deliveries)
 
         match_input = MatchInput(
             team1=match_info.home,
@@ -1317,7 +1349,7 @@ def toss(
 
     with console.status("[bold green]Optimizing with confirmed playing XI..."):
         orchestrator = Orchestrator(use_llm=use_llm)
-        orchestrator.fit_from_data(scorecards)
+        orchestrator.fit_from_data(scorecards, deliveries=deliveries)
 
         match_input = MatchInput(
             team1=team1_full,

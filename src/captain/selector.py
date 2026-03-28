@@ -49,15 +49,32 @@ class CaptainSelector:
     using Monte Carlo simulation data.
     """
 
+    # Role-level baseline 50+ rates from IPL data (2022-2024 average).
+    # Used as fallback when a player has insufficient personal history.
+    _ROLE_50PLUS_BASELINE = {"AR": 0.43, "BOWL": 0.34, "BAT": 0.30, "WK": 0.30}
+
     def __init__(
         self,
-        alpha: float = 0.5,   # weight on E[points]
-        beta: float = 0.3,    # weight on ceiling (95th %ile)
-        gamma: float = 0.2,   # weight on consistency
+        alpha: float = 0.4,   # weight on E[points]
+        beta: float = 0.25,   # weight on ceiling (95th %ile)
+        gamma: float = 0.15,  # weight on consistency
+        delta: float = 0.20,  # weight on probability of big score (50+)
+        player_history: dict[str, np.ndarray] | None = None,
     ):
         self.alpha = alpha
         self.beta = beta
         self.gamma = gamma
+        self.delta = delta
+        # Per-player historical 50+ rate from IPL data (set via set_player_history)
+        self._player_50plus_rate: dict[str, float] = {}
+        if player_history:
+            self.set_player_history(player_history)
+
+    def set_player_history(self, player_history: dict[str, np.ndarray]) -> None:
+        """Compute per-player 50+ rate from IPL history for captain scoring."""
+        for player, points in player_history.items():
+            if len(points) >= 10:
+                self._player_50plus_rate[player] = float((points >= 50).mean())
 
     def select(
         self,
@@ -126,22 +143,52 @@ class CaptainSelector:
         """
         Safe strategy: maximize expected multiplied points.
 
-        Score = α · E[2x · points] + β · ceiling_95 + γ · consistency
+        Score = α·E[2x pts] + β·ceiling + γ·consistency + δ·P(50+) + role_bonus
+
+        The P(50+) component rewards players likely to have big games —
+        critical for captaincy since 2x amplifies both good and bad outcomes.
+        All-rounders get a role bonus because dual contributions raise their floor.
         """
         df = summary.copy()
 
-        # E[2x · points] = 2 * E[points]
         df["e_2x"] = 2.0 * df["mean_fp"]
+
+        # P(50+) from simulation: how often does this player score 50+ in sims?
+        df["prob_50plus"] = 0.0
+        for _, row in df.iterrows():
+            player = row["player"]
+            if player in sim_result.player_names:
+                sims = sim_result.get_player_distribution(player)
+                df.loc[df["player"] == player, "prob_50plus"] = float((sims >= 50).mean())
+
+        # Per-player captain bonus blending IPL track record with role baseline.
+        # Simulation P(50+) captures current-form upside; history_bonus captures
+        # proven IPL pedigree that simulations may underweight.
+        df["history_bonus"] = 0.0
+        for idx, row in df.iterrows():
+            player = row["player"]
+            role = row.get("role", "BAT")
+            personal_rate = self._player_50plus_rate.get(player)
+            if personal_rate is not None:
+                # Scale: 68% (Russell) → +0.19, 50% → +0.10, 30% → 0, 10% → -0.10
+                df.loc[idx, "history_bonus"] = (personal_rate - 0.30) * 0.5
+            else:
+                # No IPL history — use role baseline (ARs still get a boost)
+                baseline = self._ROLE_50PLUS_BASELINE.get(role, 0.30)
+                df.loc[idx, "history_bonus"] = (baseline - 0.30) * 0.5
 
         # Normalize components
         max_e2x = df["e_2x"].max() or 1.0
         max_ceiling = df["ceiling_95"].max() or 1.0
         max_consistency = df["consistency"].max() or 1.0
+        max_p50 = df["prob_50plus"].max() or 1.0
 
         df["captain_score"] = (
             self.alpha * (df["e_2x"] / max_e2x)
             + self.beta * (df["ceiling_95"] / max_ceiling)
             + self.gamma * (df["consistency"] / max_consistency)
+            + self.delta * (df["prob_50plus"] / max_p50)
+            + df["history_bonus"]
         )
 
         return df
